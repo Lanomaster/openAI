@@ -62,56 +62,54 @@ function chatStripe(isAi, value, uniqueId) {
   )
 }
 
- const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const data = new FormData(form);
+  const data = new FormData(form);
 
-    //users chatStripe
-    chatContainer.innerHTML += chatStripe(false, data.get("prompt"));
+  // Users chatStripe
+  chatContainer.innerHTML += chatStripe(false, data.get("prompt"));
 
-    form.reset();
+  form.reset();
 
-    // bot chatstripe
-    const uniqueId = generateUniqueId();
-    chatContainer.innerHTML += chatStripe(true, " ", uniqueId);
+  // Bot chatstripe
+  const uniqueId = generateUniqueId();
+  chatContainer.innerHTML += chatStripe(true, " ", uniqueId);
 
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+  chatContainer.scrollTop = chatContainer.scrollHeight;
 
-    const messageDiv = document.getElementById(uniqueId);
+  const messageDiv = document.getElementById(uniqueId);
 
-    loader(messageDiv);
+  loader(messageDiv);
 
-    // fetch data from server
-    const response = await fetch("http://localhost:5000",{
+  // Fetch data from server
+  try {
+    const response = await fetch("http://localhost:5000", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      
       body: JSON.stringify({
-        prompt: data.get("prompt")
-      })
-    })
+        prompt: data.get("prompt"),
+      }),
+    });
 
-    // cuz we no longer loading
-    clearInterval(loadInterval)
-    messageDiv.innerHTML = ""
+    if (response.ok) {
+      // Get the actual response from the backend
+      const responseData = await response.json();
 
-    if(response.ok) {
-      // that is the actual response from backend
-      const data = await response.json()
-
-      const parsedData = data.bot.trim();
-      console.log(parsedData)
-      typeText(messageDiv, parsedData)
+      const parsedData = responseData.bot.trim();
+      console.log(parsedData);
+      typeText(messageDiv, parsedData);
     } else {
-      const err = response.json();
-      messageDiv.innerHTML =  "Something went wrong"
-
-      alert(err)
+      const errorMessage = await response.json();
+      messageDiv.innerHTML = "Something went wrong: " + errorMessage;
     }
-  }
+  } catch (error) {
+    console.error(error);
+    messageDiv.innerHTML = "Something went wrong: " + error.message;
+  } 
+};
 
   form.addEventListener("submit", handleSubmit)
   form.addEventListener("keyup", (e)=> {
